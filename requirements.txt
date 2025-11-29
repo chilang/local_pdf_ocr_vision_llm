@@ -1,0 +1,8 @@
+streamlit>=1.51.0
+pdf2image>=1.17.0
+mlx-vlm>=0.3.8
+pillow>=12.0.0
+ipykernel>=7.1.0
+matplotlib>=3.10.7
+torch>=2.9.0
+torchvision>=0.24.0
