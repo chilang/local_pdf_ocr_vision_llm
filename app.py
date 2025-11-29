@@ -23,6 +23,35 @@ st.set_page_config(
     layout="wide"
 )
 
+# Helper function to resize image
+def resize_image(image: Image.Image, max_size: int) -> Image.Image:
+    """
+    Resize image to fit within max_size while maintaining aspect ratio.
+    
+    Args:
+        image: PIL Image to resize
+        max_size: Maximum dimension (width or height) in pixels
+    
+    Returns:
+        Resized PIL Image
+    """
+    width, height = image.size
+    
+    # If image is already smaller than max_size, return as-is
+    if width <= max_size and height <= max_size:
+        return image
+    
+    # Calculate new dimensions maintaining aspect ratio
+    if width > height:
+        new_width = max_size
+        new_height = int(height * (max_size / width))
+    else:
+        new_height = max_size
+        new_width = int(width * (max_size / height))
+    
+    # Resize using high-quality Lanczos resampling
+    return image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
 # Title and description
 st.title("📄 PDF OCR with Local Vision LLM")
 st.markdown("Upload a PDF and extract text using a local Qwen3-VL model via MLX")
@@ -62,6 +91,17 @@ with st.sidebar:
         st.caption("📦 ~5GB download")
     elif "32B" in model_name and "4bit" in model_name:
         st.caption("📦 ~10GB download")
+    
+    # Image processing settings
+    st.subheader("Image Processing")
+    max_image_size = st.slider(
+        "Max Image Dimension (px)",
+        min_value=512,
+        max_value=2048,
+        value=1536,
+        step=128,
+        help="Resize images to this maximum dimension (width or height) before processing. Lower values use less memory."
+    )
     
     # OCR prompt
     ocr_prompt = st.text_area(
@@ -181,6 +221,15 @@ if 'current_image' in st.session_state:
                     # Prepare the image
                     image = st.session_state.current_image
                     
+                    # Resize image to prevent memory issues
+                    original_size = image.size
+                    resized_image = resize_image(image, max_image_size)
+                    resized_size = resized_image.size
+                    
+                    # Show resize info if image was resized
+                    if original_size != resized_size:
+                        st.info(f"ℹ️ Image resized from {original_size[0]}x{original_size[1]} to {resized_size[0]}x{resized_size[1]} for processing")
+                    
                     # Create the prompt with image
                     prompt = ocr_prompt
                     
@@ -192,12 +241,12 @@ if 'current_image' in st.session_state:
                         num_images=1
                     )
                     
-                    # Generate OCR output
+                    # Generate OCR output using resized image
                     result = generate(
                         st.session_state.model,
                         st.session_state.processor,
                         formatted_prompt,
-                        image,
+                        resized_image,
                         max_tokens=2048,
                         temperature=0.1,
                         verbose=False
