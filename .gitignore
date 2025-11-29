@@ -25,9 +25,6 @@ env/
 .DS_Store
 Thumbs.db
 
-# Memex
-.memex/
-
 # Temporary files
 *.tmp
 *.log
